@@ -90,10 +90,10 @@ namespace fastJSON
         /// Save property/field names as lowercase (default = false)
         /// </summary>
         public bool SerializeToLowerCaseNames = false;
-    		/// <summary>
-    		/// Convert Dictionary Int Keys to String Keys (default = false)
-    		/// </summary>
-    		public bool IntDictionaryKeysToString = false;
+        /// <summary>
+        /// Convert Dictionary Int Keys to String Keys (default = false)
+        /// </summary>
+        public bool IntDictionaryKeysToString = false;
 
 
         public void FixValues()
@@ -610,7 +610,12 @@ namespace fastJSON
 
                         switch (pi.Type)
                         {
-                            case myPropInfoType.Int: oset = (int)((long)v); break;
+                            case myPropInfoType.Int:
+                                if(v.GetType() == typeof(string))
+                                    oset = Convert.ToInt32(v);
+                                else
+                                    oset = (int)((long)v);
+                                break;
                             case myPropInfoType.Long: oset = (long)v; break;
                             case myPropInfoType.String: oset = (string)v; break;
                             case myPropInfoType.Bool: oset = (bool)v; break;
@@ -631,6 +636,7 @@ namespace fastJSON
 #endif
                             case myPropInfoType.Dictionary: oset = CreateDictionary((List<object>)v, pi.pt, pi.GenericTypes, globaltypes); break;
                             case myPropInfoType.StringKeyDictionary: oset = CreateStringKeyDictionary((Dictionary<string, object>)v, pi.pt, pi.GenericTypes, globaltypes); break;
+                            case myPropInfoType.IntKeyDictionary: oset = CreateIntKeyDictionary((Dictionary<string, object>)v, pi.pt, pi.GenericTypes, globaltypes); break;
                             case myPropInfoType.NameValue: oset = CreateNV((Dictionary<string, object>)v); break;
                             case myPropInfoType.StringDictionary: oset = CreateSD((Dictionary<string, object>)v); break;
                             case myPropInfoType.Custom: oset = Reflection.Instance.CreateCustom((string)v, pi.pt); break;
@@ -849,6 +855,44 @@ namespace fastJSON
                 }
                 else if (values.Value is IList)
                     val = CreateGenericList((List<object>)values.Value, t2, generictype, globalTypes);
+
+                else
+                    val = ChangeType(values.Value, t2);
+
+                col.Add(key, val);
+            }
+
+            return col;
+        }
+
+        private object CreateIntKeyDictionary(Dictionary<string, object> reader, Type pt, Type[] types, Dictionary<string, object> globalTypes)
+        {
+            var col = (IDictionary)Reflection.Instance.FastCreateInstance(pt);
+            Type t1 = null;
+            Type t2 = null;
+            if (types != null)
+            {
+                t1 = types[0];
+                t2 = types[1];
+            }
+
+            foreach (KeyValuePair<string, object> values in reader)
+            {
+                var key = Convert.ToInt32(values.Key);
+                object val = null;
+
+                if (values.Value is Dictionary<string, object>)
+                    val = ParseDictionary((Dictionary<string, object>)values.Value, globalTypes, t2, null);
+
+                else if (types != null && t2.IsArray)
+                {
+                    if (values.Value is Array)
+                        val = values.Value;
+                    else
+                        val = CreateArray((List<object>)values.Value, t2, t2.GetElementType(), globalTypes);
+                }
+                else if (values.Value is IList)
+                    val = CreateGenericList((List<object>)values.Value, t2, t1, globalTypes);
 
                 else
                     val = ChangeType(values.Value, t2);

@@ -31,6 +31,7 @@ namespace fastJSON
         Array,
         ByteArray,
         Dictionary,
+        IntKeyDictionary,
         StringKeyDictionary,
         NameValue,
         StringDictionary,
@@ -214,6 +215,8 @@ namespace fastJSON
                 d.GenericTypes = Reflection.Instance.GetGenericArguments(t);// t.GetGenericArguments();
                 if (d.GenericTypes.Length > 0 && d.GenericTypes[0] == typeof(string))
                     d_type = myPropInfoType.StringKeyDictionary;
+                else if (d.GenericTypes.Length > 0 && d.GenericTypes[0] == typeof(int))
+                    d_type = myPropInfoType.IntKeyDictionary;
                 else
                     d_type = myPropInfoType.Dictionary;
             }
